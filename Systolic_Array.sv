@@ -1,10 +1,12 @@
-module Systoic_Array #(
+module Systolic_Array #(
     parameter DATA_SIZE = 8,   // Integer size
     parameter ACC_SIZE = 32,   // Accumulator size
-    parameter MATRIX_SIZE = 2,   // Size of the systolic array (2x2) -> Can seperate into L x W later
+    parameter MATRIX_SIZE = 2   // Size of the systolic array (2x2) -> Can seperate into L x W later
     )(
     input logic clk,
     input logic rst_n,
+    input logic valid, // Valid signal to indicate when inputs are valid
+    input logic clear, // Clear signal to reset the accumulator
 
     input logic [DATA_SIZE-1:0] input_A [0:MATRIX_SIZE-1], // Input vector A (Column) 
     input logic [DATA_SIZE-1:0] input_B [0:MATRIX_SIZE-1], // Input vector B (Row)
@@ -12,8 +14,8 @@ module Systoic_Array #(
     output logic [ACC_SIZE-1:0] output_C [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1] // Output Matrix C [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1] (OUTPUT)
 );
 
-logic [DATA_SIZE-1:0] top_wire [0:MATRIX_SIZE][0:MATRIX_SIZE-1];  // Wiring mesh to shift right
-logic [DATA_SIZE-1:0] left_wire [0:MATRIX_SIZE-1][0:MATRIX_SIZE]; // Wiring mesh to shift down
+logic [DATA_SIZE-1:0] top_wire [0:MATRIX_SIZE][0:MATRIX_SIZE-1];  // Wiring mesh to shift down
+logic [DATA_SIZE-1:0] left_wire [0:MATRIX_SIZE-1][0:MATRIX_SIZE]; // Wiring mesh to shift right
 assign top_wire[0] = input_B; // Connect input_B to the top row of the systolic array
 for (genvar i = 0; i < MATRIX_SIZE; i++) begin
     assign left_wire[i][0] = input_A[i]; // Connect input_A to the left column of the systolic array
