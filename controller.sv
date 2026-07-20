@@ -1,8 +1,6 @@
 `include "typedef.svh"
 
 module controller #(
-    parameter DATA_SIZE = 8,    // Integer size
-    parameter ACC_SIZE = 32,    // Accumulator size
     parameter MATRIX_SIZE = 2   // Size of the systolic array
 )(
     input logic clk,
