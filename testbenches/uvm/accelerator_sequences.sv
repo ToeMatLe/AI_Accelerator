@@ -14,6 +14,7 @@ class accelerator_smoke_sequence extends uvm_sequence #(accelerator_seq_item);
         request.input_A[1][0] = 3; request.input_A[1][1] = 4;
         request.input_B[0][0] = 5; request.input_B[0][1] = 6;
         request.input_B[1][0] = 7; request.input_B[1][1] = 8;
+        request.relu_enable = 1'b1;
         finish_item(request);
 
         request = accelerator_seq_item::type_id::create("identity_request");
@@ -22,6 +23,7 @@ class accelerator_smoke_sequence extends uvm_sequence #(accelerator_seq_item);
         request.input_A[1][0] = 4; request.input_A[1][1] = 7;
         request.input_B[0][0] = 1; request.input_B[0][1] = 0;
         request.input_B[1][0] = 0; request.input_B[1][1] = 1;
+        request.relu_enable = 1'b1;
         finish_item(request);
 
         request = accelerator_seq_item::type_id::create("zero_request");
@@ -30,6 +32,25 @@ class accelerator_smoke_sequence extends uvm_sequence #(accelerator_seq_item);
             request.input_A[row][col] = '0;
             request.input_B[row][col] = '0;
         end
+        request.relu_enable = 1'b1;
+        finish_item(request);
+
+        request = accelerator_seq_item::type_id::create("relu_enabled_request");
+        start_item(request);
+        request.input_A[0][0] = -1; request.input_A[0][1] = 2;
+        request.input_A[1][0] = 3;  request.input_A[1][1] = -4;
+        request.input_B[0][0] = 1;  request.input_B[0][1] = 0;
+        request.input_B[1][0] = 0;  request.input_B[1][1] = 1;
+        request.relu_enable = 1'b1;
+        finish_item(request);
+
+        request = accelerator_seq_item::type_id::create("relu_disabled_request");
+        start_item(request);
+        request.input_A[0][0] = -1; request.input_A[0][1] = 2;
+        request.input_A[1][0] = 3;  request.input_A[1][1] = -4;
+        request.input_B[0][0] = 1;  request.input_B[0][1] = 0;
+        request.input_B[1][0] = 0;  request.input_B[1][1] = 1;
+        request.relu_enable = 1'b0;
         finish_item(request);
     endtask
 endclass

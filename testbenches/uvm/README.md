@@ -17,19 +17,20 @@ sequence
   -> scoreboard
 ```
 
-- `accelerator_seq_item.sv`: randomized A/B matrix transaction.
-- `accelerator_sequences.sv`: directed smoke and constrained-random traffic.
-- `accelerator_driver.sv`: drives matrices and pulses `start`.
+- `accelerator_seq_item.sv`: randomized signed A/B matrices and ReLU mode.
+- `accelerator_sequences.sv`: positive, zero, identity, negative/ReLU, and
+  constrained-random traffic.
+- `accelerator_driver.sv`: drives matrices, selects ReLU, and pulses `start`.
 - `accelerator_monitor.sv`: observes LOAD requests and DONE responses and
   samples controller-state functional coverage.
-- `accelerator_scoreboard.sv`: calculates `A x B` independently and compares
-  every element against the MemoryBank output.
+- `accelerator_scoreboard.sv`: calculates signed `A x B`, applies the selected
+  ReLU reference behavior, and compares every MemoryBank output element.
 - `accelerator_agent.sv`: groups the sequencer, driver, and monitor.
 - `accelerator_env.sv`: connects the agent to the scoreboard.
 - `accelerator_tests.sv`: defines `accelerator_smoke_test` and
   `accelerator_random_test`.
-- `accelerator_sva.sv`: checks controller outputs, state transitions, and the
-  final `done`/`store_done` handshake.
+- `accelerator_sva.sv`: checks controller outputs, state transitions, the final
+  `done`/`store_done` handshake, and nonnegative outputs when ReLU is enabled.
 - `tb_accelerator_uvm.sv`: clock, reset, DUT, interface, and `run_test()`.
 
 The configuration package currently matches the integrated 2x2 DUT:
@@ -107,9 +108,12 @@ A passing run shows that:
   LOAD/COMPUTE/STORE/DONE flow.
 - The stored output agrees with an independent matrix-multiplication model.
 - Consecutive operations do not retain stale PE data.
+- ReLU clamps negative accumulated results to zero when enabled.
+- ReLU-disabled operations preserve negative accumulated results.
 - Controller control outputs obey their state contracts.
 - Key controller transitions and the final storage handshake are asserted.
-- Every controller state is sampled by functional coverage.
+- Every controller state and both ReLU modes are sampled by functional
+  coverage.
 
 This is functional verification. VCS simulation does not establish synthesis
 timing or maximum clock frequency; those require synthesis and static timing

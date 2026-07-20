@@ -7,17 +7,17 @@ module Input_Buffers #(
     input logic load_enable, // High while input buffers should load A/B matrices
     input logic feed_enable, // High while buffered values should feed the systolic array
 
-    input logic [DATA_SIZE-1:0] input_A [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
-    input logic [DATA_SIZE-1:0] input_B [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
+    input logic signed [DATA_SIZE-1:0] input_A [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
+    input logic signed [DATA_SIZE-1:0] input_B [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
 
-    output logic [DATA_SIZE-1:0] output_A [0:MATRIX_SIZE-1], // Feeds array from the left
-    output logic [DATA_SIZE-1:0] output_B [0:MATRIX_SIZE-1]  // Feeds array from the top
+    output logic signed [DATA_SIZE-1:0] output_A [0:MATRIX_SIZE-1], // Feeds array from the left
+    output logic signed [DATA_SIZE-1:0] output_B [0:MATRIX_SIZE-1]  // Feeds array from the top
 );
     localparam FEED_CYCLES = 2*MATRIX_SIZE - 1;
     localparam FEED_COUNT_WIDTH = (FEED_CYCLES <= 1) ? 1 : $clog2(FEED_CYCLES);
 
-    logic [DATA_SIZE-1:0] buffer_A [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
-    logic [DATA_SIZE-1:0] buffer_B [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
+    logic signed [DATA_SIZE-1:0] buffer_A [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
+    logic signed [DATA_SIZE-1:0] buffer_B [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
     logic [FEED_COUNT_WIDTH-1:0] feed_count;
 
     // LOAD stores both complete matrices. During COMPUTE, feed_count tracks which diagonal wavefront should enter the systolic array.

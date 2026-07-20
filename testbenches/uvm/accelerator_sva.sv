@@ -89,12 +89,18 @@ module accelerator_sva (
 endmodule
 
 /* verilator lint_off DECLFILENAME */
-module accelerator_top_sva (
+module accelerator_top_sva #(
+    parameter ACC_SIZE = 32,
+    parameter MATRIX_SIZE = 2
+)(
     input logic clk,
     input logic rst_n,
     input logic done,
     input logic store_done,
-    input logic [2:0] state
+    input logic relu_enable,
+    input logic [2:0] state,
+    input logic signed [ACC_SIZE-1:0] output_C
+        [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1]
 );
     import accelerator_uvm_config_pkg::*;
 
@@ -110,6 +116,18 @@ module accelerator_top_sva (
 
     ap_store_done_aligns_with_done:
         assert property (store_done |-> done);
+
+    generate
+        for (genvar row = 0; row < MATRIX_SIZE; row++) begin : relu_row_sva
+            for (genvar col = 0; col < MATRIX_SIZE; col++) begin : relu_col_sva
+                ap_relu_clamps_negative_results:
+                    assert property (
+                        done && relu_enable |->
+                        !output_C[row][col][ACC_SIZE-1]
+                    );
+            end
+        end
+    endgenerate
 endmodule
 /* verilator lint_on DECLFILENAME */
 
@@ -126,11 +144,16 @@ bind controller accelerator_sva controller_sva_i (
     .done(done)
 );
 
-bind top accelerator_top_sva top_sva_i (
+bind top accelerator_top_sva #(
+    .ACC_SIZE(ACC_SIZE),
+    .MATRIX_SIZE(MATRIX_SIZE)
+) top_sva_i (
     .clk(clk),
     .rst_n(rst_n),
     .done(done),
     .store_done(store_done),
-    .state(state)
+    .relu_enable(relu_enable_latched),
+    .state(state),
+    .output_C(output_C)
 );
 /* verilator lint_on SYNCASYNCNET */

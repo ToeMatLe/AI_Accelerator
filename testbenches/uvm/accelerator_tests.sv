@@ -29,7 +29,7 @@ class accelerator_smoke_test extends accelerator_base_test;
         sequence_handle = accelerator_smoke_sequence::type_id::create(
             "smoke_sequence");
         sequence_handle.start(env.agent.sequencer);
-        wait (env.scoreboard.transactions_checked == 3);
+        wait (env.scoreboard.transactions_checked == 5);
         phase.drop_objection(this);
     endtask
 endclass

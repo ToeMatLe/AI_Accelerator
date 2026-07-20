@@ -8,10 +8,10 @@ module tb_input_buffers;
     logic load_enable;
     logic feed_enable;
 
-    logic [DATA_SIZE-1:0] input_A [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
-    logic [DATA_SIZE-1:0] input_B [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
-    logic [DATA_SIZE-1:0] output_A [0:MATRIX_SIZE-1];
-    logic [DATA_SIZE-1:0] output_B [0:MATRIX_SIZE-1];
+    logic signed [DATA_SIZE-1:0] input_A [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
+    logic signed [DATA_SIZE-1:0] input_B [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
+    logic signed [DATA_SIZE-1:0] output_A [0:MATRIX_SIZE-1];
+    logic signed [DATA_SIZE-1:0] output_B [0:MATRIX_SIZE-1];
 
     int error_count;
 
@@ -34,8 +34,8 @@ module tb_input_buffers;
 
     task automatic check_feed_cycle(input int cycle);
         int index;
-        logic [DATA_SIZE-1:0] expected_A;
-        logic [DATA_SIZE-1:0] expected_B;
+        logic signed [DATA_SIZE-1:0] expected_A;
+        logic signed [DATA_SIZE-1:0] expected_B;
         begin
             for (int row = 0; row < MATRIX_SIZE; row++) begin
                 index = cycle - row;

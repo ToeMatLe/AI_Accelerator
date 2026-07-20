@@ -21,7 +21,7 @@ class accelerator_scoreboard extends uvm_scoreboard;
     task run_phase(uvm_phase phase);
         accelerator_seq_item request;
         accelerator_seq_item response;
-        logic [ACC_SIZE-1:0] expected;
+        logic signed [ACC_SIZE-1:0] expected;
 
         forever begin
             request_fifo.get(request);
@@ -36,6 +36,10 @@ class accelerator_scoreboard extends uvm_scoreboard;
                                     request.input_B[k][col];
                     end
 
+                    if (request.relu_enable && expected[ACC_SIZE-1]) begin
+                        expected = '0;
+                    end
+
                     if (response.output_C[row][col] !== expected) begin
                         `uvm_error(
                             "MATRIX_MISMATCH",
@@ -43,8 +47,8 @@ class accelerator_scoreboard extends uvm_scoreboard;
                                 "%s C[%0d][%0d] got %0d expected %0d",
                                 request.inputs_to_string(),
                                 row, col,
-                                response.output_C[row][col],
-                                expected
+                                $signed(response.output_C[row][col]),
+                                $signed(expected)
                             )
                         )
                     end

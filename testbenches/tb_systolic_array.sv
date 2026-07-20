@@ -8,21 +8,21 @@ module tb_systolic_array;
     // Testbench signals for 2x2, 3x3, and 4x4 systolic arrays
     logic valid2;
     logic clear2;
-    logic [DATA_SIZE-1:0] input_A2 [0:1];
-    logic [DATA_SIZE-1:0] input_B2 [0:1];
-    logic [ACC_SIZE-1:0] output_C2 [0:1][0:1];
+    logic signed [DATA_SIZE-1:0] input_A2 [0:1];
+    logic signed [DATA_SIZE-1:0] input_B2 [0:1];
+    logic signed [ACC_SIZE-1:0] output_C2 [0:1][0:1];
 
     logic valid3;
     logic clear3;
-    logic [DATA_SIZE-1:0] input_A3 [0:2];
-    logic [DATA_SIZE-1:0] input_B3 [0:2];
-    logic [ACC_SIZE-1:0] output_C3 [0:2][0:2];
+    logic signed [DATA_SIZE-1:0] input_A3 [0:2];
+    logic signed [DATA_SIZE-1:0] input_B3 [0:2];
+    logic signed [ACC_SIZE-1:0] output_C3 [0:2][0:2];
 
     logic valid4;
     logic clear4;
-    logic [DATA_SIZE-1:0] input_A4 [0:3];
-    logic [DATA_SIZE-1:0] input_B4 [0:3];
-    logic [ACC_SIZE-1:0] output_C4 [0:3][0:3];
+    logic signed [DATA_SIZE-1:0] input_A4 [0:3];
+    logic signed [DATA_SIZE-1:0] input_B4 [0:3];
+    logic signed [ACC_SIZE-1:0] output_C4 [0:3][0:3];
 
     Systolic_Array #(
         .DATA_SIZE(DATA_SIZE),
@@ -102,8 +102,8 @@ module tb_systolic_array;
     endtask
 
     task automatic run_2x2;
-        logic [DATA_SIZE-1:0] A [0:1][0:1];
-        logic [DATA_SIZE-1:0] B [0:1][0:1];
+        logic signed [DATA_SIZE-1:0] A [0:1][0:1];
+        logic signed [DATA_SIZE-1:0] B [0:1][0:1];
         int expected [0:1][0:1];
         int cycle;
         int row;
@@ -167,8 +167,8 @@ module tb_systolic_array;
     endtask
 
     task automatic run_3x3;
-        logic [DATA_SIZE-1:0] A [0:2][0:2];
-        logic [DATA_SIZE-1:0] B [0:2][0:2];
+        logic signed [DATA_SIZE-1:0] A [0:2][0:2];
+        logic signed [DATA_SIZE-1:0] B [0:2][0:2];
         int expected [0:2][0:2];
         int cycle;
         int row;
@@ -234,8 +234,8 @@ module tb_systolic_array;
     endtask
 
     task automatic run_4x4;
-        logic [DATA_SIZE-1:0] A [0:3][0:3];
-        logic [DATA_SIZE-1:0] B [0:3][0:3];
+        logic signed [DATA_SIZE-1:0] A [0:3][0:3];
+        logic signed [DATA_SIZE-1:0] B [0:3][0:3];
         int expected [0:3][0:3];
         int cycle;
         int row;

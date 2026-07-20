@@ -8,11 +8,12 @@ module top #(
     input logic clk,
     input logic rst_n,
     input logic start,
+    input logic relu_enable,
 
-    input logic [DATA_SIZE-1:0] input_A [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
-    input logic [DATA_SIZE-1:0] input_B [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
+    input logic signed [DATA_SIZE-1:0] input_A [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
+    input logic signed [DATA_SIZE-1:0] input_B [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
 
-    output logic [ACC_SIZE-1:0] output_C [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
+    output logic signed [ACC_SIZE-1:0] output_C [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
     output logic done,
     output logic store_done,
     output state_t state
@@ -22,10 +23,21 @@ module top #(
     logic load_enable;
     logic feed_enable;
     logic store_enable;
+    logic relu_enable_latched;
 
-    logic [DATA_SIZE-1:0] buffered_A [0:MATRIX_SIZE-1];
-    logic [DATA_SIZE-1:0] buffered_B [0:MATRIX_SIZE-1];
-    logic [ACC_SIZE-1:0] acc_matrix [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
+    logic signed [DATA_SIZE-1:0] buffered_A [0:MATRIX_SIZE-1];
+    logic signed [DATA_SIZE-1:0] buffered_B [0:MATRIX_SIZE-1];
+    logic signed [ACC_SIZE-1:0] acc_matrix [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
+    logic signed [ACC_SIZE-1:0] activated_matrix [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
+
+    // Capture the activation mode with the matrices for the full operation.
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            relu_enable_latched <= 1'b0;
+        end else if (load_enable) begin
+            relu_enable_latched <= relu_enable;
+        end
+    end
 
     // The controller selects the LOAD, COMPUTE, STORE, and DONE phases.
     controller #(
@@ -74,6 +86,16 @@ module top #(
         .output_C(acc_matrix)
     );
 
+    // Optionally clamp negative accumulated results to zero.
+    ReLU #(
+        .ACC_SIZE(ACC_SIZE),
+        .MATRIX_SIZE(MATRIX_SIZE)
+    ) relu_unit (
+        .relu_enable(relu_enable_latched),
+        .input_C(acc_matrix),
+        .output_C(activated_matrix)
+    );
+
     // Preserve the completed accumulator matrix one row per STORE cycle.
     MemoryBank #(
         .ACC_SIZE(ACC_SIZE),
@@ -82,7 +104,7 @@ module top #(
         .clk(clk),
         .rst_n(rst_n),
         .store_enable(store_enable),
-        .acc_matrix(acc_matrix),
+        .acc_matrix(activated_matrix),
         .stored_matrix(output_C),
         .store_done(store_done)
     );

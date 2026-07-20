@@ -8,15 +8,16 @@ module tb_top;
     logic clk;
     logic rst_n;
     logic start;
+    logic relu_enable;
 
-    logic [DATA_SIZE-1:0] input_A [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
-    logic [DATA_SIZE-1:0] input_B [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
-    logic [ACC_SIZE-1:0] output_C [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
+    logic signed [DATA_SIZE-1:0] input_A [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
+    logic signed [DATA_SIZE-1:0] input_B [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
+    logic signed [ACC_SIZE-1:0] output_C [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
     logic done;
     logic store_done;
     state_t state;
 
-    int unsigned expected_C [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
+    logic signed [ACC_SIZE-1:0] expected_C [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
     int error_count;
 
     top #(
@@ -27,6 +28,7 @@ module tb_top;
         .clk(clk),
         .rst_n(rst_n),
         .start(start),
+        .relu_enable(relu_enable),
         .input_A(input_A),
         .input_B(input_B),
         .output_C(output_C),
@@ -46,6 +48,10 @@ module tb_top;
 
                     for (int k = 0; k < MATRIX_SIZE; k++) begin
                         expected_C[row][col] += input_A[row][k] * input_B[k][col];
+                    end
+
+                    if (relu_enable && expected_C[row][col][ACC_SIZE-1]) begin
+                        expected_C[row][col] = '0;
                     end
                 end
             end
@@ -75,7 +81,8 @@ module tb_top;
                     if (output_C[row][col] !== expected_C[row][col]) begin
                         $error("%s: C[%0d][%0d] got %0d expected %0d",
                                test_name, row, col,
-                               output_C[row][col], expected_C[row][col]);
+                               $signed(output_C[row][col]),
+                               $signed(expected_C[row][col]));
                         error_count++;
                     end
                 end
@@ -90,6 +97,7 @@ module tb_top;
     initial begin
         rst_n = 1'b0;
         start = 1'b0;
+        relu_enable = 1'b1;
         error_count = 0;
 
         for (int row = 0; row < MATRIX_SIZE; row++) begin
@@ -115,6 +123,18 @@ module tb_top;
         input_B[0][0] = 4; input_B[0][1] = 1;
         input_B[1][0] = 2; input_B[1][1] = 5;
         start_and_check("second operation");
+
+        // ReLU enabled: negative values are clamped to zero.
+        relu_enable = 1'b1;
+        input_A[0][0] = -1; input_A[0][1] = 2;
+        input_A[1][0] = 3;  input_A[1][1] = -4;
+        input_B[0][0] = 1;  input_B[0][1] = 0;
+        input_B[1][0] = 0;  input_B[1][1] = 1;
+        start_and_check("ReLU enabled");
+
+        // ReLU disabled: the same negative results pass through unchanged.
+        relu_enable = 1'b0;
+        start_and_check("ReLU disabled");
 
         if (error_count == 0) begin
             $display("Top-level integration test passed");

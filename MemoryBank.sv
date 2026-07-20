@@ -6,8 +6,8 @@ module MemoryBank #(
     input logic rst_n,
     input logic store_enable,
 
-    input logic [ACC_SIZE-1:0] acc_matrix [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
-    output logic [ACC_SIZE-1:0] stored_matrix [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
+    input logic signed [ACC_SIZE-1:0] acc_matrix [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
+    output logic signed [ACC_SIZE-1:0] stored_matrix [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
     output logic store_done
 );
     localparam INDEX_WIDTH = $clog2(MATRIX_SIZE);

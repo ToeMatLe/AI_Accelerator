@@ -8,6 +8,7 @@ ProcessingElement.sv
 Systolic_Array.sv
 Input_Buffers.sv
 MemoryBank.sv
+ReLU.sv
 controller.sv
 top.sv
 

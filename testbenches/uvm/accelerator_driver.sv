@@ -36,6 +36,7 @@ class accelerator_driver extends uvm_driver #(accelerator_seq_item);
                     vif.input_B[row][col] <= request.input_B[row][col];
                 end
             end
+            vif.relu_enable <= request.relu_enable;
             vif.start <= 1'b1;
 
             // One full start pulse is enough for IDLE to enter LOAD.

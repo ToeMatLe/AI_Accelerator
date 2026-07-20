@@ -14,6 +14,7 @@ module tb_accelerator_uvm;
         .clk(clk),
         .rst_n(accel_vif.rst_n),
         .start(accel_vif.start),
+        .relu_enable(accel_vif.relu_enable),
         .input_A(accel_vif.input_A),
         .input_B(accel_vif.input_B),
         .output_C(accel_vif.output_C),
@@ -28,6 +29,7 @@ module tb_accelerator_uvm;
     initial begin
         accel_vif.rst_n = 1'b0;
         accel_vif.start = 1'b0;
+        accel_vif.relu_enable = 1'b0;
 
         for (int row = 0; row < MATRIX_SIZE; row++) begin
             for (int col = 0; col < MATRIX_SIZE; col++) begin

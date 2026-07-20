@@ -18,10 +18,20 @@ class accelerator_monitor extends uvm_monitor;
         }
     endgroup
 
+    covergroup activation_coverage with function sample(logic relu_mode);
+        option.per_instance = 1;
+
+        relu_cp: coverpoint relu_mode {
+            bins disabled = {1'b0};
+            bins enabled = {1'b1};
+        }
+    endgroup
+
     function new(string name = "accelerator_monitor",
                  uvm_component parent = null);
         super.new(name, parent);
         state_coverage = new();
+        activation_coverage = new();
     endfunction
 
     function void build_phase(uvm_phase phase);
@@ -66,6 +76,8 @@ class accelerator_monitor extends uvm_monitor;
                         request.input_B[row][col] = vif.input_B[row][col];
                     end
                 end
+                request.relu_enable = vif.relu_enable;
+                activation_coverage.sample(vif.relu_enable);
 
                 request_ap.write(request);
             end
