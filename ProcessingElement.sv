@@ -20,6 +20,8 @@ always_ff @(posedge clk or negedge rst_n) begin
         output_B <= '0;
     end else if (clear) begin
         acc_out <= '0;
+        output_A <= '0;
+        output_B <= '0;
     end else if (valid) begin
         acc_out <= acc_out + (input_A * input_B);
         output_A <= input_A;
