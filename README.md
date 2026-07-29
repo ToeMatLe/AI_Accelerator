@@ -27,37 +27,6 @@ row-wise output-memory architecture.
 - Directed SystemVerilog testbenches
 - UVM environment, SVA assertions, functional coverage, and VCS regression
 
-## Integrated architecture
-
-```text
-                           control signals
-                     +------------------------+
-                     |       controller       |
-                     | LOAD/COMPUTE/STORE/DONE|
-                     +-----------+------------+
-                                 |
-                                 v
-+-------------+     +-----------------------+     +------------------+
-| Input A/B   | --> |     Input_Buffers     | --> |  Systolic_Array  |
-| matrices    |     | capture + edge skewing|     |  N x N PE mesh   |
-+-------------+     +-----------------------+     +---------+--------+
-                                                            |
-                                                            v
-                                                    +---------------+
-                                                    |     ReLU      |
-                                                    | max(0, value) |
-                                                    +-------+-------+
-                                                            |
-                                                            v
-                                                    +---------------+
-                                                    |  MemoryBank   |
-                                                    | row-wise store|
-                                                    +-------+-------+
-                                                            |
-                                                            v
-                                                     Output matrix C
-```
-
 ## How the accelerator computes matrix multiplication
 
 ![Systolic-array wavefront data movement](docs/images/systolic_array.jpg)
