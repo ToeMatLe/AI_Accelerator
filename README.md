@@ -124,67 +124,7 @@ each A value is reused across a PE row, each B value is reused down a PE
 column, and all PEs perform multiply-accumulate operations concurrently
 without repeatedly reading every operand from memory.
 
-## Systolic data movement
-
-A values enter from the left and move right. B values enter from the top and
-move down:
-
-```text
-                  B[0]       B[1]
-                    |          |
-                    v          v
-A[0] --->        PE(0,0) --> PE(0,1)
-                    |          |
-                    v          v
-A[1] --->        PE(1,0) --> PE(1,1)
-```
-
-`Input_Buffers` skews the edge values so that matching `A[row][k]` and
-`B[k][col]` reach `PE(row,col)` on the same clock. On every valid clock, a PE:
-
-```text
-accumulator <= accumulator + input_A * input_B
-output_A    <= input_A
-output_B    <= input_B
-```
-
-The PE accumulator is exposed directly as its corresponding `output_C`
-element.
-
-## Controller phases and timing
-
-For `MATRIX_SIZE = N`:
-
-| State | Purpose | Duration |
-| --- | --- | --- |
-| `IDLE` | Wait for `start` and clear old PE state | Until `start` |
-| `LOAD` | Capture both complete input matrices | 1 cycle |
-| `COMPUTE` | Feed, propagate, accumulate, and drain | `3N - 2` cycles |
-| `STORE` | Copy one result row into `MemoryBank` | `N` cycles |
-| `DONE` | Pulse `done` for the completed operation | 1 cycle |
-
-During the first `2N - 1` compute cycles, `feed_enable` injects real matrix
-values. The remaining `N - 1` compute cycles allow the last values to move
-through the array and reach the bottom-right PE.
-
-The one-cycle `LOAD` stage is possible because the current top-level interface
-presents both complete matrices in parallel. A narrower SRAM, AXI, or scalar
-input interface would require a multi-cycle loading protocol.
-
 ## Numeric datapaths
-
-### Integrated signed-integer path
-
-The default parameters are:
-
-```systemverilog
-DATA_SIZE   = 8
-ACC_SIZE    = 32
-MATRIX_SIZE = 2
-```
-
-Each PE performs an `8-bit x 8-bit` signed multiplication, sign-extends the
-16-bit product, and adds it to a signed 32-bit accumulator.
 
 ### Integrated BF16/FP32 path
 
@@ -229,152 +169,19 @@ floating-point FMA. Both blocks are combinational between PE accumulator
 registers, which keeps the implementation understandable but creates a long
 timing path.
 
-## Module guide
+### Integrated signed-integer path
 
-| File | Role |
-| --- | --- |
-| `top.sv` | Integrated signed-integer accelerator |
-| `top_BF16.sv` | Integrated BF16-input, FP32-output accelerator |
-| `controller.sv` | Generates load, compute, store, clear, valid, and done controls |
-| `typedef.svh` | Defines the controller state type |
-| `Input_Buffers.sv` | Captures A/B matrices and generates skewed edge vectors |
-| `ProcessingElement.sv` | Signed-integer multiply-accumulate PE |
-| `Systolic_Array.sv` | Parameterized signed-integer PE mesh |
-| `ReLU.sv` | Optionally clamps negative accumulated values to zero |
-| `MemoryBank.sv` | Stores the completed result one row per cycle |
-| `bf16_pkg.sv` | BF16/FP32 types, constants, and classification helpers |
-| `bf16_multiplier.sv` | BF16 multiply with an FP32 result |
-| `fp32_adder.sv` | FP32 add/subtract, alignment, normalization, and rounding |
-| `bf16_mac.sv` | Connects BF16 multiplication to FP32 accumulation |
-| `ProcessingElement_BF16.sv` | BF16-input, FP32-accumulator PE |
-| `Systolic_Array_BF16.sv` | Parameterized BF16 PE mesh |
+The default parameters are:
 
-## Verification
-
-### Directed testbenches
-
-| Testbench | Coverage |
-| --- | --- |
-| `testbenches/tb_input_buffers.sv` | Matrix capture, skewing, and feed timing |
-| `testbenches/tb_systolic_array.sv` | 2x2, 3x3, and 4x4 integer arrays |
-| `testbenches/tb_top.sv` | Full controller-to-memory integration and ReLU |
-| `testbenches/tb_bf16_datapath.sv` | BF16 multiply, FP32 add, special behavior, and 2x2 BF16 array |
-| `testbenches/tb_top_BF16.sv` | Full BF16 controller, buffers, array, ReLU, and output-memory integration |
-
-### Run the integrated test with Verilator
-
-From the repository root:
-
-```bash
-verilator --binary --timing -Wall -Wno-fatal \
-  --top-module tb_top \
-  --Mdir /tmp/ai_accel_top_obj \
-  "-I$(pwd)" \
-  "$(pwd)/ProcessingElement.sv" \
-  "$(pwd)/Systolic_Array.sv" \
-  "$(pwd)/Input_Buffers.sv" \
-  "$(pwd)/MemoryBank.sv" \
-  "$(pwd)/ReLU.sv" \
-  "$(pwd)/controller.sv" \
-  "$(pwd)/top.sv" \
-  "$(pwd)/testbenches/tb_top.sv"
-
-/tmp/ai_accel_top_obj/Vtb_top
+```systemverilog
+DATA_SIZE   = 8
+ACC_SIZE    = 32
+MATRIX_SIZE = 2
 ```
 
-Expected result:
+Each PE performs an `8-bit x 8-bit` signed multiplication, sign-extends the
+16-bit product, and adds it to a signed 32-bit accumulator.
 
-```text
-Top-level integration test passed
-```
-
-Absolute source paths and a temporary build directory avoid build-tool issues
-caused by the space in the repository directory name.
-
-### Run the BF16 datapath test with Verilator
-
-```bash
-verilator --binary --timing -Wall -Wno-fatal \
-  --top-module tb_bf16_datapath \
-  --Mdir /tmp/ai_accel_bf16_obj \
-  "$(pwd)/bf16_pkg.sv" \
-  "$(pwd)/bf16_multiplier.sv" \
-  "$(pwd)/fp32_adder.sv" \
-  "$(pwd)/bf16_mac.sv" \
-  "$(pwd)/ProcessingElement_BF16.sv" \
-  "$(pwd)/Systolic_Array_BF16.sv" \
-  "$(pwd)/testbenches/tb_bf16_datapath.sv"
-
-/tmp/ai_accel_bf16_obj/Vtb_bf16_datapath
-```
-
-Expected result:
-
-```text
-BF16 datapath and 2x2 systolic-array tests passed
-```
-
-`bf16_pkg.sv` must appear before files that import the package.
-
-### Run the integrated BF16 top-level test
-
-```bash
-verilator --binary --timing -Wall -Wno-fatal \
-  --top-module tb_top_BF16 \
-  --Mdir /tmp/ai_accel_top_bf16_obj \
-  "-I$(pwd)" \
-  "$(pwd)/bf16_pkg.sv" \
-  "$(pwd)/bf16_multiplier.sv" \
-  "$(pwd)/fp32_adder.sv" \
-  "$(pwd)/bf16_mac.sv" \
-  "$(pwd)/ProcessingElement_BF16.sv" \
-  "$(pwd)/Systolic_Array_BF16.sv" \
-  "$(pwd)/Input_Buffers.sv" \
-  "$(pwd)/MemoryBank.sv" \
-  "$(pwd)/ReLU.sv" \
-  "$(pwd)/controller.sv" \
-  "$(pwd)/top_BF16.sv" \
-  "$(pwd)/testbenches/tb_top_BF16.sv"
-
-/tmp/ai_accel_top_bf16_obj/Vtb_top_BF16
-```
-
-Expected result:
-
-```text
-BF16 top-level integration test passed
-```
-
-### UVM, SVA, coverage, and VCS regression
-
-The class-based UVM environment in `testbenches/uvm/` verifies the integrated
-signed-integer `top` with:
-
-- Directed and constrained-random matrix transactions
-- An independent scoreboard model
-- ReLU-enabled and ReLU-disabled cases
-- Concurrent SystemVerilog assertions
-- Controller-state and ReLU functional coverage
-- Multiple random seeds
-
-On the configured UCLA server:
-
-```bash
-cd /home/nadersb/ucla-tapeout/tle/systolic_array
-chmod +x testbenches/uvm/run_vcs_regression.sh
-./testbenches/uvm/run_vcs_regression.sh
-```
-
-Increase the randomized transaction count with:
-
-```bash
-NUM_TRANSACTIONS=100 ./testbenches/uvm/run_vcs_regression.sh
-```
-
-Regression logs, the executable, Verdi database, and merged coverage database
-are written under `vcs_build/`. See
-[`testbenches/uvm/README.md`](testbenches/uvm/README.md) for the environment
-structure and server details.
 
 ## Top-level interfaces
 
@@ -399,17 +206,31 @@ interfaces differ only in numeric representation:
 | `store_done` | Output | Indicates that every output row has been stored |
 | `state` | Output | Current controller state |
 
+## Module guide
+
+| File | Role |
+| --- | --- |
+| `top.sv` | Integrated signed-integer accelerator |
+| `top_BF16.sv` | Integrated BF16-input, FP32-output accelerator |
+| `controller.sv` | Generates load, compute, store, clear, valid, and done controls |
+| `typedef.svh` | Defines the controller state type |
+| `Input_Buffers.sv` | Captures A/B matrices and generates skewed edge vectors |
+| `ProcessingElement.sv` | Signed-integer multiply-accumulate PE |
+| `Systolic_Array.sv` | Parameterized signed-integer PE mesh |
+| `ReLU.sv` | Optionally clamps negative accumulated values to zero |
+| `MemoryBank.sv` | Stores the completed result one row per cycle |
+| `bf16_pkg.sv` | BF16/FP32 types, constants, and classification helpers |
+| `bf16_multiplier.sv` | BF16 multiply with an FP32 result |
+| `fp32_adder.sv` | FP32 add/subtract, alignment, normalization, and rounding |
+| `bf16_mac.sv` | Connects BF16 multiplication to FP32 accumulation |
+| `ProcessingElement_BF16.sv` | BF16-input, FP32-accumulator PE |
+| `Systolic_Array_BF16.sv` | Parameterized BF16 PE mesh |
+
 ## Current limitations and next steps
 
-- Define floating-point ReLU behavior for NaN and signed zero.
 - Pipeline the BF16 multiplier and FP32 adder for a practical clock frequency.
 - Add valid-pipeline tracking if floating-point arithmetic becomes multi-cycle.
 - Extend the UVM environment and functional coverage to `top_BF16`.
-- Replace the full-matrix load interface with a realistic SRAM or streaming
-  protocol.
 - Run synthesis and static timing analysis against a target standard-cell or
   FPGA technology before claiming area, power, or maximum clock frequency.
 
-The synthesizable RTL and simulation regressions establish functional
-behavior; they do not by themselves establish timing closure or fabrication
-readiness.
