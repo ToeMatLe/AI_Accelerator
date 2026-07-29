@@ -3,13 +3,13 @@
 module top_BF16 #(
     parameter int MATRIX_SIZE = 2
 )(
-    input  logic clk,
-    input  logic rst_n,
-    input  logic start,
-    input  logic relu_enable,
+    input logic clk,
+    input logic rst_n,
+    input logic start,
+    input logic relu_enable,
 
-    input  logic [15:0] input_A [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
-    input  logic [15:0] input_B [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
+    input logic [15:0] input_A [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
+    input logic [15:0] input_B [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
 
     output logic [31:0] output_C [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1],
     output logic done,
@@ -26,10 +26,12 @@ module top_BF16 #(
     logic store_enable;
     logic relu_enable_latched;
 
-    logic signed [BF16_SIZE-1:0] buffered_A [0:MATRIX_SIZE-1];
-    logic signed [BF16_SIZE-1:0] buffered_B [0:MATRIX_SIZE-1];
-    logic signed [FP32_SIZE-1:0] acc_matrix [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
+    logic [BF16_SIZE-1:0] buffered_A [0:MATRIX_SIZE-1];
+    logic [BF16_SIZE-1:0] buffered_B [0:MATRIX_SIZE-1];
+    logic [FP32_SIZE-1:0] acc_matrix [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
+    logic signed [FP32_SIZE-1:0] relu_input_matrix [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
     logic signed [FP32_SIZE-1:0] activated_matrix [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
+    logic signed [FP32_SIZE-1:0] stored_matrix [0:MATRIX_SIZE-1][0:MATRIX_SIZE-1];
 
     // Keep the selected activation mode stable for the entire operation.
     always_ff @(posedge clk or negedge rst_n) begin
@@ -55,8 +57,7 @@ module top_BF16 #(
         .state(state)
     );
 
-    Input_Buffers #(
-        .DATA_SIZE(BF16_SIZE),
+    Input_Buffers_BF16 #(
         .MATRIX_SIZE(MATRIX_SIZE)
     ) input_buffers_unit (
         .clk(clk),
@@ -81,12 +82,24 @@ module top_BF16 #(
         .output_C(acc_matrix)
     );
 
+    // ReLU and MemoryBank are shared with the integer path and therefore use
+    // signed packed ports. Convert each packed FP32 bit pattern explicitly so
+    // Vivado does not need to match signed and unsigned unpacked-array ports.
+    generate
+        for (genvar row = 0; row < MATRIX_SIZE; row++) begin : fp32_row_adapters
+            for (genvar col = 0; col < MATRIX_SIZE; col++) begin : fp32_col_adapters
+                assign relu_input_matrix[row][col] = $signed(acc_matrix[row][col]);
+                assign output_C[row][col] = stored_matrix[row][col];
+            end
+        end
+    endgenerate
+
     ReLU #(
         .ACC_SIZE(FP32_SIZE),
         .MATRIX_SIZE(MATRIX_SIZE)
     ) relu_unit (
         .relu_enable(relu_enable_latched),
-        .input_C(acc_matrix),
+        .input_C(relu_input_matrix),
         .output_C(activated_matrix)
     );
 
@@ -98,7 +111,7 @@ module top_BF16 #(
         .rst_n(rst_n),
         .store_enable(store_enable),
         .acc_matrix(activated_matrix),
-        .stored_matrix(output_C),
+        .stored_matrix(stored_matrix),
         .store_done(store_done)
     );
 endmodule
