@@ -30,11 +30,9 @@ module bf16_multiplier (
         sign_result = input_A[15] ^ input_B[15]; //XOR the sign bits
 
         exponent_A = input_A[14:7];
-        exponent_A_unbiased = 0;
         mantissa_A = 8'b0;
 
         exponent_B = input_B[14:7];
-        exponent_B_unbiased = 0;
         mantissa_B = 8'b0;
 
         // FP32 is sign/exponent/fraction = 1/8/23
