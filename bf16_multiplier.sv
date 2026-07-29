@@ -19,8 +19,6 @@ module bf16_multiplier (
     logic [23:0] subnormal_rounded;
     logic guard_bit;
     logic sticky_bit;
-    integer exponent_A_unbiased;
-    integer exponent_B_unbiased;
     integer exponent_result;
     integer subnormal_shift;
     integer index;
@@ -64,11 +62,9 @@ module bf16_multiplier (
             
             mantissa_A = {1'b1, input_A[6:0]};
             mantissa_B = {1'b1, input_B[6:0]};
-            exponent_A_unbiased = integer'(exponent_A) - 127;
-            exponent_B_unbiased = integer'(exponent_B) - 127;
 
             mantissa_product = mantissa_A * mantissa_B;
-            exponent_result = exponent_A_unbiased + exponent_B_unbiased + 127;
+            exponent_result = integer'(exponent_A) + integer'(exponent_B) - 127;
 
             // Range [1, 4) -> [1,2)
             // Shift products >= 2 right once and increase the exponent
