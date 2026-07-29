@@ -1,16 +1,17 @@
 +incdir+.
 +incdir+testbenches/uvm
++incdir+rtl/common
 
 testbenches/uvm/accelerator_uvm_config_pkg.sv
 testbenches/uvm/accelerator_if.sv
 
-ProcessingElement.sv
-Systolic_Array.sv
-Input_Buffers.sv
-MemoryBank.sv
-ReLU.sv
-controller.sv
-top.sv
+rtl/common/Input_Buffers.sv
+rtl/common/MemoryBank.sv
+rtl/common/ReLU.sv
+rtl/common/controller.sv
+rtl/integer/ProcessingElement.sv
+rtl/integer/Systolic_Array.sv
+rtl/integer/top.sv
 
 testbenches/uvm/accelerator_sva.sv
 testbenches/uvm/accelerator_uvm_pkg.sv
